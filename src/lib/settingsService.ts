@@ -55,7 +55,7 @@ export const settingsService = {
                     key,
                     value,
                     updated_at: new Date().toISOString()
-                });
+                } as any);
 
             if (error) throw error;
 
