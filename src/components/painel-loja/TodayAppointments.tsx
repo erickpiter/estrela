@@ -11,7 +11,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
 export function TodayAppointments() {
-    const { todayAppointments, loading, markAsVisited, markAsNoShow, selectedDate, setSelectedDate } = useStorePanelData();
+    const { todayAppointments, loading, markAsVisited, markAsNoShow, selectedDate, setSelectedDate, markAsPurchased } = useStorePanelData();
     // const [date, setDate] = useState<Date | undefined>(new Date());
 
     const formatTime = (dateString: string) => {
@@ -181,10 +181,27 @@ export function TodayAppointments() {
                                         </Button>
                                     </div>
                                 ) : (
-                                    <div className="pt-1">
-                                        <p className="text-xs text-center text-muted-foreground">
-                                            Atendimento finalizado em {appointment.checkin_at ? formatTime(appointment.checkin_at) : 'horário não registrado'}.
-                                        </p>
+                                    <div className="pt-2 flex justify-end">
+                                        {/* Purchase Logic */}
+                                        {appointment.tags?.includes('venda_realizada') ? (
+                                            <Button
+                                                size="sm"
+                                                variant="secondary"
+                                                className="bg-emerald-100 text-emerald-800 hover:bg-emerald-200 border border-emerald-200 cursor-default"
+                                            >
+                                                <CheckCircle2 className="w-4 h-4 mr-2" />
+                                                Venda Confirmada
+                                            </Button>
+                                        ) : (
+                                            <Button
+                                                size="sm"
+                                                onClick={() => markAsPurchased(appointment.id)}
+                                                className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm"
+                                            >
+                                                <ShoppingBag className="w-4 h-4 mr-2" />
+                                                Registrar Venda
+                                            </Button>
+                                        )}
                                     </div>
                                 )}
                             </div>

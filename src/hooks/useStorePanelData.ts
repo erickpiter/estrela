@@ -12,10 +12,11 @@ export interface DailyStats {
     totalAppointments: number;
     confirmedVisits: number;
     totalNoShows: number;
+    totalSales: number;
     pendingFollowUps: number;
     sentFollowUps: number;
     dailyGoal: number;
-    attendantPerformance: { [key: string]: number };
+    attendantPerformance: { [key: string]: { visits: number; sales: number } };
 }
 
 export function useStorePanelData() {
@@ -26,6 +27,7 @@ export function useStorePanelData() {
         totalAppointments: 0,
         confirmedVisits: 0,
         totalNoShows: 0,
+        totalSales: 0,
         pendingFollowUps: 0,
         sentFollowUps: 0,
         dailyGoal: parseInt(localStorage.getItem('mini_painel_daily_goal') || import.meta.env.VITE_DAILY_VISIT_GOAL || "20"),
@@ -116,16 +118,28 @@ export function useStorePanelData() {
                 return ['follow_up_01', 'perdido'].some(t => tags.includes(t));
             }).length || 0;
 
+            const totalSales = appointmentsArray.filter(c => {
+                const tags = c.tags?.toLowerCase() || '';
+                return tags.includes('venda_realizada');
+            }).length || 0;
+
             // Calculate Attendant Performance
-            const attendantPerformance: { [key: string]: number } = {};
+            const attendantPerformance: { [key: string]: { visits: number; sales: number } } = {};
             appointmentsArray.forEach(c => {
                 const status = c.status_visita?.toLowerCase() || '';
                 const tags = c.tags?.toLowerCase() || '';
                 const isConfirmed = status === 'confirmado' || tags.includes('compareceu');
+                const isSale = tags.includes('venda_realizada');
 
                 if (isConfirmed) {
                     const attendantName = c.Atendente || c.source || c.IG || 'Sem Atendente';
-                    attendantPerformance[attendantName] = (attendantPerformance[attendantName] || 0) + 1;
+                    if (!attendantPerformance[attendantName]) {
+                        attendantPerformance[attendantName] = { visits: 0, sales: 0 };
+                    }
+                    attendantPerformance[attendantName].visits += 1;
+                    if (isSale) {
+                        attendantPerformance[attendantName].sales += 1;
+                    }
                 }
             });
 
@@ -142,6 +156,7 @@ export function useStorePanelData() {
                 totalAppointments,
                 confirmedVisits,
                 totalNoShows,
+                totalSales,
                 pendingFollowUps: pendingFollowUpsCount || 0,
                 attendantPerformance
             }));
@@ -185,6 +200,7 @@ export function useStorePanelData() {
                 clientName: contact?.display_name || "Cliente", // Default if null
                 attendant: contact?.Atendente || "Não atribuído",
                 phone: contact?.phone_e164,
+                ig: contact?.IG,
                 checkInTime: nowISO
             };
 
@@ -242,6 +258,7 @@ export function useStorePanelData() {
                 clientName: contact?.display_name,
                 attendant: contact?.Atendente,
                 phone: contact?.phone_e164,
+                ig: contact?.IG,
                 reason,
                 action: 'move_to_pending'
             });
@@ -292,6 +309,7 @@ export function useStorePanelData() {
                 clientName: contact.display_name,
                 attendant: contact.Atendente,
                 phone: contact.phone_e164,
+                ig: contact.IG,
                 contact: contact.IG ? `@${contact.IG.replace('@', '')}` : contact.phone_e164,
                 status: (contact.status_visita === 'confirmado' || contact.tags?.includes('compareceu')) ? "Compareceu" : "Não compareceu"
             });
@@ -338,6 +356,7 @@ export function useStorePanelData() {
                 clientName: contact.display_name,
                 attendant: contact.Atendente,
                 phone: contact.phone_e164,
+                ig: contact.IG,
                 checkInTime: nowISO,
                 originalDate: contact.data_agendamento
             });
@@ -361,6 +380,51 @@ export function useStorePanelData() {
                 description: "Tente novamente.",
                 variant: "destructive"
             });
+        }
+    };
+
+    const markAsPurchased = async (contactId: number) => {
+        try {
+            const { data: contact } = await supabase.from('contacts').select('*').eq('id', contactId).single();
+            if (!contact) return;
+
+            const currentTags = contact.tags || '';
+            if (currentTags.includes('venda_realizada')) {
+                toast({ title: "Venda já registrada para este cliente." });
+                return;
+            }
+
+            const newTags = currentTags ? `${currentTags}, venda_realizada` : 'venda_realizada';
+
+            const { error } = await supabase
+                .from('contacts')
+                .update({ tags: newTags } as any)
+                .eq('id', contactId);
+
+            if (error) throw error;
+
+            await sendToWebhook({
+                type: 'sale_registered',
+                contactId,
+                clientName: contact.display_name,
+                attendant: contact.Atendente,
+                phone: contact.phone_e164,
+                ig: contact.IG,
+                value: 0, // Placeholder for future value
+                date: new Date().toISOString()
+            });
+
+            toast({
+                title: "Venda registrada! 💰",
+                description: "Parabéns pela venda!",
+                className: "bg-green-50 border-green-200 text-green-800"
+            });
+
+            loadTodayAppointments();
+            loadDailyStats();
+        } catch (error) {
+            console.error('Error marking purchase:', error);
+            toast({ title: "Erro ao registrar venda", variant: "destructive" });
         }
     };
 
@@ -468,6 +532,7 @@ export function useStorePanelData() {
         markFollowUpAsReturned,
         selectedDate,
         setSelectedDate,
-        loadTodayAppointments
+        loadTodayAppointments,
+        markAsPurchased
     };
 }

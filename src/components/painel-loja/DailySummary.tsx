@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useStorePanelData } from "@/hooks/useStorePanelData";
-import { CheckCircle2, AlertCircle, TrendingUp, Target, UserCheck } from "lucide-react";
+import { CheckCircle2, AlertCircle, TrendingUp, Target, UserCheck, ShoppingBag, Calendar } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 
 export function DailySummary() {
@@ -54,12 +54,22 @@ export function DailySummary() {
                 <CardContent>
                     <div className="text-2xl font-bold">{attendanceRate}%</div>
                     <p className="text-xs text-muted-foreground">
-                        {dailyStats.confirmedVisits} de {dailyStats.totalAppointments} agendados
+                        {dailyStats.confirmedVisits} visitas de {dailyStats.totalAppointments} agendamentos
                     </p>
                 </CardContent>
             </Card>
 
             <div className="grid grid-cols-2 gap-4">
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Agendados</CardTitle>
+                        <Calendar className="h-4 w-4 text-blue-500" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">{dailyStats.totalAppointments}</div>
+                    </CardContent>
+                </Card>
+
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">Confirmados</CardTitle>
@@ -79,6 +89,16 @@ export function DailySummary() {
                         <div className="text-2xl font-bold">{dailyStats.totalNoShows}</div>
                     </CardContent>
                 </Card>
+
+                <Card className="bg-gradient-to-r from-emerald-50 to-teal-50 border-emerald-100">
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium text-emerald-900">Vendas</CardTitle>
+                        <ShoppingBag className="h-4 w-4 text-emerald-600" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold text-emerald-700">{dailyStats.totalSales || 0}</div>
+                    </CardContent>
+                </Card>
             </div>
 
             {/* Attendant Performance */}
@@ -95,13 +115,20 @@ export function DailySummary() {
                             <p className="text-xs text-muted-foreground text-center py-2">Nenhuma visita confirmada hoje</p>
                         ) : (
                             Object.entries(dailyStats.attendantPerformance)
-                                .sort(([, a], [, b]) => b - a)
-                                .map(([attendant, count]) => (
+                                .sort(([, a], [, b]) => b.visits - a.visits)
+                                .map(([attendant, stats]) => (
                                     <div key={attendant} className="flex items-center justify-between text-sm">
                                         <span className="text-muted-foreground">{attendant}</span>
-                                        <span className="font-medium bg-secondary px-2 py-0.5 rounded text-xs">
-                                            {count} visitas
-                                        </span>
+                                        <div className="flex gap-2">
+                                            <span className="font-medium bg-secondary px-2 py-0.5 rounded text-xs">
+                                                {stats.visits} visitas
+                                            </span>
+                                            {stats.sales > 0 && (
+                                                <span className="font-medium bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded text-xs">
+                                                    {stats.sales} vendas
+                                                </span>
+                                            )}
+                                        </div>
                                     </div>
                                 ))
                         )}

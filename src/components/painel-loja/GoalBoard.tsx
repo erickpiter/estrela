@@ -17,11 +17,13 @@ import { Progress } from "@/components/ui/progress";
 interface GoalStats {
     totalAppointments: number;
     confirmedVisits: number;
+    totalSales: number;
     conversionRate: number;
     attendantPerformance: {
         [key: string]: {
             scheduled: number;
             confirmed: number;
+            sales: number;
             rate: number;
         }
     };
@@ -38,6 +40,7 @@ export function GoalBoard({ dailyGoal = 20 }: GoalBoardProps) {
     const [stats, setStats] = useState<GoalStats>({
         totalAppointments: 0,
         confirmedVisits: 0,
+        totalSales: 0,
         conversionRate: 0,
         attendantPerformance: {},
         uniqueAttendants: []
@@ -99,7 +102,7 @@ export function GoalBoard({ dailyGoal = 20 }: GoalBoardProps) {
 
                 // Initialize if not exists
                 if (!attendantPerf[attendant]) {
-                    attendantPerf[attendant] = { scheduled: 0, confirmed: 0, rate: 0 };
+                    attendantPerf[attendant] = { scheduled: 0, confirmed: 0, sales: 0, rate: 0 };
                 }
 
                 // Check functionality: valid schedule
@@ -115,7 +118,15 @@ export function GoalBoard({ dailyGoal = 20 }: GoalBoardProps) {
                     attendantPerf[attendant].confirmed++;
                     totalConf++;
                 }
+
+                // Check sales
+                if (contact.tags?.includes('venda_realizada')) {
+                    attendantPerf[attendant].sales++;
+                }
             });
+
+            // Calculate Total Sales
+            const totalSales = Object.values(attendantPerf).reduce((acc, curr) => acc + curr.sales, 0);
 
             // Calculate Rates
             Object.keys(attendantPerf).forEach(key => {
@@ -126,6 +137,7 @@ export function GoalBoard({ dailyGoal = 20 }: GoalBoardProps) {
             setStats({
                 totalAppointments: totalSched,
                 confirmedVisits: totalConf,
+                totalSales: totalSales,
                 conversionRate: totalSched > 0 ? (totalConf / totalSched) * 100 : 0,
                 attendantPerformance: attendantPerf,
                 uniqueAttendants: Array.from(uniqueAttendantsSet).sort()
@@ -328,7 +340,7 @@ export function GoalBoard({ dailyGoal = 20 }: GoalBoardProps) {
                     </div>
 
                     {/* Summary Cards */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                         <Card className="bg-primary/5 border-primary/20">
                             <CardHeader className="pb-2">
                                 <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -370,6 +382,20 @@ export function GoalBoard({ dailyGoal = 20 }: GoalBoardProps) {
                                 </div>
                             </CardContent>
                         </Card>
+
+                        <Card className="bg-emerald-50 border-emerald-200">
+                            <CardHeader className="pb-2">
+                                <CardTitle className="text-sm font-medium text-muted-foreground">
+                                    Vendas Realizadas
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-3xl font-bold text-emerald-700 flex items-center gap-2">
+                                    <Trophy className="w-5 h-5" />
+                                    {loading ? "..." : stats.totalSales}
+                                </div>
+                            </CardContent>
+                        </Card>
                     </div>
 
                     {/* Attendant Leaderboard */}
@@ -386,7 +412,7 @@ export function GoalBoard({ dailyGoal = 20 }: GoalBoardProps) {
                                 <p className="text-center py-4 text-muted-foreground">Nenhum dado encontrado para o período.</p>
                             ) : (
                                 Object.entries(stats.attendantPerformance)
-                                    .sort(([, a], [, b]) => b.confirmed - a.confirmed)
+                                    .sort(([, a], [, b]) => b.confirmed - a.confirmed) // Or sort by sales? b.sales - a.sales
                                     .map(([name, perf], index) => (
                                         <div key={name} className="flex items-center gap-4 p-4 border rounded-lg bg-card hover:bg-muted/50 transition-colors">
                                             <div className="flex-shrink-0 font-bold text-lg text-muted-foreground w-6 text-center">
@@ -408,7 +434,10 @@ export function GoalBoard({ dailyGoal = 20 }: GoalBoardProps) {
                                                 <div className="space-y-1">
                                                     <div className="flex justify-between text-xs text-muted-foreground">
                                                         <span>{perf.scheduled} agendados</span>
-                                                        <span>{perf.rate.toFixed(1)}% comp.</span>
+                                                        <div className="flex gap-2">
+                                                            {perf.sales > 0 && <span className="font-bold text-emerald-600">{perf.sales} vendas</span>}
+                                                            <span>{perf.rate.toFixed(1)}% comp.</span>
+                                                        </div>
                                                     </div>
                                                     <Progress value={perf.rate} className="h-2" />
                                                 </div>
