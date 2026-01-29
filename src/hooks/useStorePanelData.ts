@@ -348,8 +348,11 @@ export function useStorePanelData() {
                 className: "bg-green-50 border-green-200 text-green-800"
             });
 
+            // Force view to switch to Today so the user sees the returned client
+            setSelectedDate(new Date());
+
             loadPendingNoShows();
-            loadTodayAppointments();
+            loadTodayAppointments(new Date()); // Force load for today
             loadDailyStats();
         } catch (error) {
             console.error('Error marking return:', error);
@@ -441,7 +444,17 @@ export function useStorePanelData() {
             }));
         };
         fetchRemoteSettings();
-    }, []);
+
+        // Auto-refresh every 5 minutes
+        const refreshInterval = setInterval(() => {
+            console.log("Auto-refreshing data...");
+            loadTodayAppointments();
+            loadPendingNoShows();
+            loadDailyStats();
+        }, 5 * 60 * 1000);
+
+        return () => clearInterval(refreshInterval);
+    }, [selectedDate]); // Add selectedDate dependency to ensure load functions use correct date scope
 
     return {
         loading,
