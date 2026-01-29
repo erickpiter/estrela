@@ -15,7 +15,7 @@ export const settingsService = {
                 .from('settings')
                 .select('value')
                 .eq('key', key)
-                .single();
+                .single() as any;
 
             if (data?.value) {
                 // Cache in localStorage for offline/faster subsequent access

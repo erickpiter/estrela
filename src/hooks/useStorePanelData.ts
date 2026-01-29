@@ -6,7 +6,7 @@ import { sendToWebhook } from "@/lib/webhook";
 import { settingsService } from "@/lib/settingsService";
 import { startOfDay, endOfDay, format } from "date-fns";
 
-type Contact = Database['public']['Tables']['contacts']['Row'];
+type Contact = any;
 
 export interface DailyStats {
     totalAppointments: number;
