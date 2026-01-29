@@ -6,6 +6,7 @@
     "scripts": {
         "dev": "vite",
         "build": "tsc -b && vite build",
+        "start": "serve -s dist -l 3000",
         "lint": "eslint .",
         "preview": "vite preview"
     },
@@ -28,6 +29,7 @@
         "react-day-picker": "^8.10.1",
         "react-dom": "^18.3.1",
         "react-router-dom": "^7.13.0",
+        "serve": "^14.2.5",
         "sonner": "^1.7.2",
         "tailwind-merge": "^2.6.0",
         "tailwindcss-animate": "^1.0.7"
