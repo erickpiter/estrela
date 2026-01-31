@@ -6,6 +6,7 @@ import { QuickActions } from "@/components/painel-loja/QuickActions";
 import { PainelLojaAuthPage } from "@/components/auth/PainelLojaAuthPage";
 import { LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { StorePanelProvider } from "@/hooks/useStorePanelData";
 
 export function PainelLojaPage() {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -56,21 +57,22 @@ export function PainelLojaPage() {
 
             {/* Main Content */}
             <main className="container mx-auto px-6 py-8">
+                <StorePanelProvider>
+                    {/* Main grid layout - 3 columns on desktop, stacked on mobile */}
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                        {/* Left Wrapper - 2/3 width */}
+                        <div className="lg:col-span-2 space-y-6">
+                            <TodayAppointments />
+                            <PendingNoShows />
+                        </div>
 
-                {/* Main grid layout - 3 columns on desktop, stacked on mobile */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    {/* Left Wrapper - 2/3 width */}
-                    <div className="lg:col-span-2 space-y-6">
-                        <TodayAppointments />
-                        <PendingNoShows />
+                        {/* Right Wrapper - 1/3 width */}
+                        <div className="space-y-6">
+                            <DailySummary />
+                            <QuickActions />
+                        </div>
                     </div>
-
-                    {/* Right Wrapper - 1/3 width */}
-                    <div className="space-y-6">
-                        <DailySummary />
-                        <QuickActions />
-                    </div>
-                </div>
+                </StorePanelProvider>
             </main>
         </div>
     );

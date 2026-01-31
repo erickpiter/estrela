@@ -1,11 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, createContext, useContext, ReactNode } from "react";
 import { supabase } from "@/lib/supabase";
 import { useToast } from "@/hooks/use-toast";
-import { Database } from "@/types";
 import { sendToWebhook } from "@/lib/webhook";
 import { settingsService } from "@/lib/settingsService";
-import { startOfDay, endOfDay, format } from "date-fns";
+import { startOfDay, endOfDay } from "date-fns";
 
+// Force Contact to be any to bypass broken Supabase types
 type Contact = any;
 
 export interface DailyStats {
@@ -19,10 +19,30 @@ export interface DailyStats {
     attendantPerformance: { [key: string]: { visits: number; sales: number } };
 }
 
-export function useStorePanelData() {
+interface StorePanelContextData {
+    loading: boolean;
+    todayAppointments: Contact[];
+    pendingNoShows: Contact[];
+    dailyStats: DailyStats;
+    selectedDate: Date;
+    setSelectedDate: (date: Date) => void;
+    markAsVisited: (contactId: number, options?: { source?: string }) => Promise<void>;
+    markAsNoShow: (contactId: number, options?: { source?: string }) => Promise<void>;
+    sendFollowUp: (contactId: number) => Promise<void>;
+    rescheduleAppointment: (contactId: number) => Promise<void>;
+    markFollowUpAsReturned: (contactId: number) => Promise<void>;
+    markAsPurchased: (contactId: number) => Promise<void>;
+    updateContact: (contactId: number, updates: any) => Promise<void>;
+    loadTodayAppointments: (dateOverride?: Date) => Promise<void>;
+}
+
+const StorePanelContext = createContext<StorePanelContextData | undefined>(undefined);
+
+export function StorePanelProvider({ children }: { children: ReactNode }) {
     const [loading, setLoading] = useState(true);
-    const [todayAppointments, setTodayAppointments] = useState<Contact[]>([]);
-    const [pendingNoShows, setPendingNoShows] = useState<Contact[]>([]);
+    // Explicitly type state as any[] to avoid 'never[]' inference
+    const [todayAppointments, setTodayAppointments] = useState<any[]>([]);
+    const [pendingNoShows, setPendingNoShows] = useState<any[]>([]);
     const [dailyStats, setDailyStats] = useState<DailyStats>({
         totalAppointments: 0,
         confirmedVisits: 0,
@@ -52,8 +72,8 @@ export function useStorePanelData() {
 
             console.log(`[Loading Appointments] Range: ${start} - ${end}`);
 
-            const { data, error } = await supabase
-                .from('contacts')
+            // Cast to any to bypass 'never' type inference
+            const { data, error } = await (supabase.from('contacts') as any)
                 .select('*')
                 .gte('data_agendamento', start)
                 .lte('data_agendamento', end)
@@ -71,8 +91,7 @@ export function useStorePanelData() {
 
     const loadPendingNoShows = async () => {
         try {
-            const { data, error } = await supabase
-                .from('contacts')
+            const { data, error } = await (supabase.from('contacts') as any)
                 .select('*')
                 .in('tags', ['follow_up_01', 'follow_up_02', 'follow_up_03', 'follow_up_04'])
                 .order('data_agendamento', { ascending: false });
@@ -90,10 +109,8 @@ export function useStorePanelData() {
             console.log(`[Loading Stats] Range: ${start} - ${end}`);
 
             // Load appointments stats (Scheduled for today)
-            // Selecting more fields to ensure we have data for logic
-            const { data: appointmentsData, error: appointmentsError } = await supabase
-                .from('contacts')
-                .select('*') // Getting all fields avoids missing columns issues
+            const { data: appointmentsData, error: appointmentsError } = await (supabase.from('contacts') as any)
+                .select('*')
                 .gte('data_agendamento', start)
                 .lte('data_agendamento', end);
 
@@ -115,7 +132,8 @@ export function useStorePanelData() {
 
             const totalNoShows = appointmentsArray.filter(c => {
                 const tags = c.tags?.toLowerCase() || '';
-                return ['follow_up_01', 'perdido'].some(t => tags.includes(t));
+                const status = c.status_visita?.toLowerCase() || '';
+                return ['follow_up_01', 'perdido'].some(t => tags.includes(t)) || status === 'no_show' || status === 'no-show';
             }).length || 0;
 
             const totalSales = appointmentsArray.filter(c => {
@@ -143,9 +161,8 @@ export function useStorePanelData() {
                 }
             });
 
-            // Load follow-ups stats (Global pending, not just for today)
-            const { count: pendingFollowUpsCount, error: followUpsError } = await supabase
-                .from('contacts')
+            // Load follow-ups stats (Global pending)
+            const { count: pendingFollowUpsCount, error: followUpsError } = await (supabase.from('contacts') as any)
                 .select('tags', { count: 'exact', head: true })
                 .in('tags', ['follow_up_01', 'follow_up_02', 'follow_up_03', 'follow_up_04']);
 
@@ -165,46 +182,41 @@ export function useStorePanelData() {
         }
     };
 
-    const markAsVisited = async (contactId: number) => {
+    const markAsVisited = async (contactId: number, options?: { source?: string }) => {
         try {
-            // Fetch fresh contact data to ensure we have name/attendant for webhook
-            const { data: contact, error: fetchError } = await supabase
-                .from('contacts')
+            const { data: contact, error: fetchError } = await (supabase.from('contacts') as any)
                 .select('*')
                 .eq('id', contactId)
                 .single();
 
             if (fetchError || !contact) {
                 console.error("Contact not found for webhook:", contactId);
-                // Fallback to local state if fetch fails (unlikely)
             }
 
             const nowISO = new Date().toISOString();
 
-            const { error } = await supabase
-                .from('contacts')
+            const { error } = await (supabase.from('contacts') as any)
                 .update({
                     tags: 'compareceu',
                     status_visita: 'confirmado',
                     checkin_at: nowISO,
                     ultimo_contato: nowISO
-                } as any)
+                })
                 .eq('id', contactId);
 
             if (error) throw error;
 
-            // Send Webhook with FRESH data
             const webhookPayload = {
                 type: 'presence_confirmed',
                 contactId,
-                clientName: contact?.display_name || "Cliente", // Default if null
+                clientName: contact?.display_name || "Cliente",
                 attendant: contact?.Atendente || "Não atribuído",
                 phone: contact?.phone_e164,
                 ig: contact?.IG,
-                checkInTime: nowISO
+                checkInTime: nowISO,
+                source: options?.source || 'button'
             };
 
-            console.log("[Webhook] Sending payload:", webhookPayload);
             await sendToWebhook(webhookPayload);
 
             toast({
@@ -213,7 +225,6 @@ export function useStorePanelData() {
                 className: "bg-green-50 border-green-200 text-green-800"
             });
 
-            // Refresh data
             loadTodayAppointments();
             loadDailyStats();
         } catch (error) {
@@ -226,32 +237,27 @@ export function useStorePanelData() {
         }
     };
 
-    const markAsNoShow = async (contactId: number) => {
+    const markAsNoShow = async (contactId: number, options?: { source?: string }) => {
         try {
-            // Fetch fresh data
-            const { data: contact } = await supabase
-                .from('contacts')
+            const { data: contact } = await (supabase.from('contacts') as any)
                 .select('*')
                 .eq('id', contactId)
                 .single();
 
-            // TODO: In future, get reason from UI
             const reason = 'Sem contato';
             const nowISO = new Date().toISOString();
 
-            const { error } = await supabase
-                .from('contacts')
+            const { error } = await (supabase.from('contacts') as any)
                 .update({
                     tags: 'follow_up_01',
                     status_visita: 'no_show',
                     motivo_no_show: reason,
                     ultimo_contato: nowISO
-                } as any)
+                })
                 .eq('id', contactId);
 
             if (error) throw error;
 
-            // Send Webhook
             await sendToWebhook({
                 type: 'no_show_registered',
                 contactId,
@@ -260,7 +266,8 @@ export function useStorePanelData() {
                 phone: contact?.phone_e164,
                 ig: contact?.IG,
                 reason,
-                action: 'move_to_pending'
+                action: 'move_to_pending',
+                source: options?.source || 'button'
             });
 
             toast({
@@ -291,12 +298,11 @@ export function useStorePanelData() {
             else if (contact.tags === 'follow_up_03') newTag = 'follow_up_04';
             else if (contact.tags === 'follow_up_04') newTag = 'perdido';
 
-            const { error } = await supabase
-                .from('contacts')
+            const { error } = await (supabase.from('contacts') as any)
                 .update({
                     tags: newTag,
                     ultimo_contato: new Date().toISOString()
-                } as any)
+                })
                 .eq('id', contactId);
 
             if (error) throw error;
@@ -332,20 +338,19 @@ export function useStorePanelData() {
 
     const markFollowUpAsReturned = async (contactId: number) => {
         try {
-            const { data: contact } = await supabase.from('contacts').select('*').eq('id', contactId).single();
+            const { data: contact } = await (supabase.from('contacts') as any).select('*').eq('id', contactId).single();
             if (!contact) return;
 
             const nowISO = new Date().toISOString();
 
-            const { error } = await supabase
-                .from('contacts')
+            const { error } = await (supabase.from('contacts') as any)
                 .update({
                     tags: 'compareceu',
                     status_visita: 'confirmado',
                     checkin_at: nowISO,
                     ultimo_contato: nowISO,
                     data_agendamento: nowISO
-                } as any)
+                })
                 .eq('id', contactId);
 
             if (error) throw error;
@@ -367,11 +372,10 @@ export function useStorePanelData() {
                 className: "bg-green-50 border-green-200 text-green-800"
             });
 
-            // Force view to switch to Today so the user sees the returned client
             setSelectedDate(new Date());
 
             loadPendingNoShows();
-            loadTodayAppointments(new Date()); // Force load for today
+            loadTodayAppointments(new Date());
             loadDailyStats();
         } catch (error) {
             console.error('Error marking return:', error);
@@ -385,7 +389,7 @@ export function useStorePanelData() {
 
     const markAsPurchased = async (contactId: number) => {
         try {
-            const { data: contact } = await supabase.from('contacts').select('*').eq('id', contactId).single();
+            const { data: contact } = await (supabase.from('contacts') as any).select('*').eq('id', contactId).single();
             if (!contact) return;
 
             const currentTags = contact.tags || '';
@@ -396,9 +400,8 @@ export function useStorePanelData() {
 
             const newTags = currentTags ? `${currentTags}, venda_realizada` : 'venda_realizada';
 
-            const { error } = await supabase
-                .from('contacts')
-                .update({ tags: newTags } as any)
+            const { error } = await (supabase.from('contacts') as any)
+                .update({ tags: newTags })
                 .eq('id', contactId);
 
             if (error) throw error;
@@ -410,7 +413,7 @@ export function useStorePanelData() {
                 attendant: contact.Atendente,
                 phone: contact.phone_e164,
                 ig: contact.IG,
-                value: 0, // Placeholder for future value
+                value: 0,
                 date: new Date().toISOString()
             });
 
@@ -428,6 +431,41 @@ export function useStorePanelData() {
         }
     };
 
+    const updateContact = async (contactId: number, updates: any) => {
+        try {
+            const { error } = await (supabase.from('contacts') as any)
+                .update(updates)
+                .eq('id', contactId);
+
+            if (error) throw error;
+
+            toast({
+                title: "Contato atualizado",
+                description: "As informações foram salvas com sucesso.",
+                className: "bg-green-50 border-green-200 text-green-800"
+            });
+
+            // Optimistic update or refresh
+            loadTodayAppointments(); // Refresh list to show changes
+            loadDailyStats(); // Refresh stats in case status/sales changed
+        } catch (error) {
+            console.error('Error updating contact:', error);
+            toast({
+                title: "Erro ao atualizar",
+                description: "Não foi possível salvar as alterações. Tente novamente.",
+                variant: "destructive"
+            });
+        }
+    };
+
+    const rescheduleAppointment = async (_contactId: number) => {
+        toast({
+            title: "Funcionalidade em desenvolvimento",
+            description: "O reagendamento será implementado em breve"
+        });
+    };
+
+    // Effect to load data when date changes
     useEffect(() => {
         const loadAllData = async () => {
             setLoading(true);
@@ -492,13 +530,7 @@ export function useStorePanelData() {
         return () => clearInterval(intervalId);
     }, [todayAppointments, loading]);
 
-    const rescheduleAppointment = async (_contactId: number) => {
-        toast({
-            title: "Funcionalidade em desenvolvimento",
-            description: "O reagendamento será implementado em breve"
-        });
-    };
-
+    // Fetch settings and auto-refresh
     useEffect(() => {
         const fetchRemoteSettings = async () => {
             const goal = await settingsService.getSetting('mini_painel_daily_goal', import.meta.env.VITE_DAILY_VISIT_GOAL || "20");
@@ -518,21 +550,38 @@ export function useStorePanelData() {
         }, 5 * 60 * 1000);
 
         return () => clearInterval(refreshInterval);
-    }, [selectedDate]); // Add selectedDate dependency to ensure load functions use correct date scope
+    }, [selectedDate]);
 
-    return {
+    const providerValue = {
         loading,
         todayAppointments,
         pendingNoShows,
         dailyStats,
+        selectedDate,
+        setSelectedDate,
         markAsVisited,
         markAsNoShow,
         sendFollowUp,
         rescheduleAppointment,
         markFollowUpAsReturned,
-        selectedDate,
-        setSelectedDate,
-        loadTodayAppointments,
-        markAsPurchased
+        markAsPurchased,
+        updateContact,
+        loadTodayAppointments
     };
+
+    const ContextProvider = StorePanelContext.Provider;
+
+    return (
+        <ContextProvider value={providerValue}>
+            {children}
+        </ContextProvider>
+    );
+}
+
+export function useStorePanelData() {
+    const context = useContext(StorePanelContext);
+    if (context === undefined) {
+        throw new Error('useStorePanelData must be used within a StorePanelProvider');
+    }
+    return context;
 }

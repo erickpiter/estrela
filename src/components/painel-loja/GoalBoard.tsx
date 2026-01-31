@@ -358,7 +358,7 @@ export function GoalBoard({ dailyGoal = 20 }: GoalBoardProps) {
                         <Card className="bg-green-50 border-green-200">
                             <CardHeader className="pb-2">
                                 <CardTitle className="text-sm font-medium text-muted-foreground">
-                                    Visitas Confirmadas
+                                    Comparecimentos
                                 </CardTitle>
                             </CardHeader>
                             <CardContent>

@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useStorePanelData } from "@/hooks/useStorePanelData";
-import { CheckCircle2, AlertCircle, TrendingUp, Target, UserCheck, ShoppingBag, Calendar } from "lucide-react";
+import { CheckCircle2, AlertCircle, TrendingUp, Target, UserCheck, ShoppingBag, Calendar, Trophy } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 
 export function DailySummary() {
@@ -18,6 +18,10 @@ export function DailySummary() {
 
     const attendanceRate = dailyStats.totalAppointments > 0
         ? Math.round((dailyStats.confirmedVisits / dailyStats.totalAppointments) * 100)
+        : 0;
+
+    const conversionRate = dailyStats.confirmedVisits > 0
+        ? Math.round((dailyStats.totalSales / dailyStats.confirmedVisits) * 100)
         : 0;
 
     // Ensure dailyGoal is valid to avoid division by zero or NaN
@@ -45,19 +49,34 @@ export function DailySummary() {
                 </CardContent>
             </Card>
 
-            {/* Attendance Rate */}
-            <Card className="bg-card w-full">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Taxa de Comparecimento</CardTitle>
-                    <TrendingUp className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                    <div className="text-2xl font-bold">{attendanceRate}%</div>
-                    <p className="text-xs text-muted-foreground">
-                        {dailyStats.confirmedVisits} visitas de {dailyStats.totalAppointments} agendamentos
-                    </p>
-                </CardContent>
-            </Card>
+            {/* Rates Row */}
+            <div className="grid grid-cols-2 gap-4">
+                <Card className="bg-card">
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Taxa de Comparecimento</CardTitle>
+                        <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">{attendanceRate}%</div>
+                        <p className="text-xs text-muted-foreground">
+                            {dailyStats.confirmedVisits} visitas de {dailyStats.totalAppointments} agendamentos
+                        </p>
+                    </CardContent>
+                </Card>
+
+                <Card className="bg-card">
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Taxa de Conversão</CardTitle>
+                        <Trophy className="h-4 w-4 text-emerald-600" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold text-emerald-700">{conversionRate}%</div>
+                        <p className="text-xs text-muted-foreground">
+                            {dailyStats.totalSales} vendas de {dailyStats.confirmedVisits} visitas
+                        </p>
+                    </CardContent>
+                </Card>
+            </div>
 
             <div className="grid grid-cols-2 gap-4">
                 <Card>
@@ -72,7 +91,7 @@ export function DailySummary() {
 
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Confirmados</CardTitle>
+                        <CardTitle className="text-sm font-medium">Comparecimentos</CardTitle>
                         <CheckCircle2 className="h-4 w-4 text-green-500" />
                     </CardHeader>
                     <CardContent>
