@@ -3,7 +3,7 @@ import { supabase } from "@/lib/supabase";
 import { useToast } from "@/hooks/use-toast";
 import { sendToWebhook } from "@/lib/webhook";
 import { settingsService } from "@/lib/settingsService";
-import { startOfDay, endOfDay } from "date-fns";
+import { startOfDay, endOfDay, subDays } from "date-fns";
 
 // Force Contact to be any to bypass broken Supabase types
 type Contact = any;
@@ -91,9 +91,12 @@ export function StorePanelProvider({ children }: { children: ReactNode }) {
 
     const loadPendingNoShows = async () => {
         try {
+            const fiveDaysAgo = subDays(new Date(), 5).toISOString();
+
             const { data, error } = await (supabase.from('contacts') as any)
                 .select('*')
                 .in('tags', ['follow_up_01', 'follow_up_02', 'follow_up_03', 'follow_up_04'])
+                .gte('data_agendamento', fiveDaysAgo)
                 .order('data_agendamento', { ascending: false });
 
             if (error) throw error;
