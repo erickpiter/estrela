@@ -160,6 +160,7 @@ export function useStorePanelData() {
 
             const { error } = await supabase
                 .from('contacts')
+                // @ts-ignore: Supabase type mismatch
                 .update({
                     tags: 'compareceu', // Keep for backward compatibility
                     status_visita: 'confirmado',
@@ -210,6 +211,7 @@ export function useStorePanelData() {
 
             const { error } = await supabase
                 .from('contacts')
+                // @ts-ignore: Supabase type mismatch
                 .update({
                     tags: 'follow_up_01', // Keep for compatibility
                     status_visita: 'no_show',
@@ -263,6 +265,7 @@ export function useStorePanelData() {
 
             const { error } = await supabase
                 .from('contacts')
+                // @ts-ignore: Supabase type mismatch
                 .update({
                     tags: newTag,
                     ultimo_contato: new Date().toISOString()
@@ -315,6 +318,7 @@ export function useStorePanelData() {
 
             const { error } = await supabase
                 .from('contacts')
+                // @ts-ignore: Supabase type mismatch
                 .update({
                     tags: 'compareceu',
                     status_visita: 'confirmado',
