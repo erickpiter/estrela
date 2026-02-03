@@ -16,7 +16,8 @@ import {
 } from "@/components/ui/dialog";
 import {
     Zap,
-    Settings
+    Settings,
+    Users
 } from "lucide-react";
 
 import { useToast } from "@/hooks/use-toast";
@@ -102,6 +103,20 @@ export function QuickActions() {
                             </div>
                         </Button>
 
+                        <Button
+                            variant="outline"
+                            className="w-full justify-start p-3 h-auto border-primary/20 hover:bg-primary/5"
+                        >
+                            <div className="flex items-center gap-3 w-full">
+                                <div className="p-2 rounded-lg bg-primary/10 text-primary">
+                                    <Users className="w-4 h-4" />
+                                </div>
+                                <div className="text-left flex-1">
+                                    <p className="font-medium text-foreground text-sm">Lista de Clientes</p>
+                                    <p className="text-xs text-muted-foreground">Gerenciar base</p>
+                                </div>
+                            </div>
+                        </Button>
                         <ReportAutomation />
                     </div>
                 </CardContent>
