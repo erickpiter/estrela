@@ -3,11 +3,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { AlertCircle, Phone, Calendar } from "lucide-react";
-import { useStorePanelData } from "@/hooks/useStorePanelData";
+import { StorePanelData } from "@/hooks/useStorePanelData";
 import { formatPhoneForWhatsApp } from "@/lib/utils";
 
-export function PendingNoShows() {
-    const { pendingNoShows, loading, sendFollowUp, markFollowUpAsReturned } = useStorePanelData();
+export function PendingNoShows({ pendingNoShows, loading, sendFollowUp, markFollowUpAsReturned }: StorePanelData) {
 
     const getInitials = (name?: string) => {
         if (!name) return "?";

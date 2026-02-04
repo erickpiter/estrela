@@ -66,11 +66,33 @@ export function useStorePanelData() {
 
     const loadPendingNoShows = async () => {
         try {
-            const { data, error } = await supabase
+            const now = new Date();
+            const isToday = selectedDate.toDateString() === now.toDateString();
+
+            let query = supabase
                 .from('contacts')
                 .select('*')
-                .in('tags', ['follow_up_01', 'follow_up_02', 'follow_up_03', 'follow_up_04'])
-                .order('data_agendamento', { ascending: false });
+                .in('tags', ['follow_up_01', 'follow_up_02', 'follow_up_03', 'follow_up_04']);
+
+            if (isToday) {
+                // Logic for TODAY: Show accumulated from last 5 days
+                const fiveDaysAgo = new Date(now.getTime() - 5 * 24 * 60 * 60 * 1000).toISOString();
+                query = query.gte('data_agendamento', fiveDaysAgo);
+                // And we generally want them ordered by urgency or date? keeping existing order
+                query = query.order('data_agendamento', { ascending: false });
+            } else {
+                // Logic for PAST/FUTURE Date: Show ONLY from that specific day
+                const targetDateStr = selectedDate.toLocaleDateString('en-CA');
+                const startOfDay = `${targetDateStr}T00:00:00`;
+                const endOfDay = `${targetDateStr}T23:59:59`;
+
+                query = query
+                    .gte('data_agendamento', startOfDay)
+                    .lt('data_agendamento', endOfDay)
+                    .order('data_agendamento', { ascending: true });
+            }
+
+            const { data, error } = await query;
 
             if (error) throw error;
             setPendingNoShows(data || []);
@@ -452,6 +474,69 @@ export function useStorePanelData() {
         });
     };
 
+    const updateContact = async (contactId: number, updates: any) => {
+        console.log('Updating contact:', contactId, updates);
+        try {
+            const { error } = await supabase
+                .from('contacts')
+                .update(updates)
+                .eq('id', contactId);
+
+            if (error) throw error;
+
+            toast({
+                title: "Contato atualizado",
+                description: "As informações foram salvas com sucesso."
+            });
+
+            loadTodayAppointments();
+        } catch (error: any) {
+            console.error('Error updating contact:', error);
+            toast({
+                title: "Erro ao atualizar",
+                description: error.message || "Não foi possível salvar as alterações.",
+                variant: "destructive"
+            });
+        }
+    };
+
+    const markAsPurchased = async (contactId: number) => {
+        try {
+            const contact = todayAppointments.find(c => c.id === contactId);
+            if (!contact) return;
+
+            // Append tag if not present
+            const currentTags = contact.tags || '';
+            if (currentTags.includes('venda_realizada')) return;
+
+            const newTags = currentTags ? `${currentTags},venda_realizada` : 'venda_realizada';
+
+            const { error } = await supabase
+                .from('contacts')
+                // @ts-ignore
+                .update({ tags: newTags })
+                .eq('id', contactId);
+
+            if (error) throw error;
+
+            toast({
+                title: "Venda registrada!",
+                description: "Venda contabilizada para as metas do dia.",
+                className: "bg-emerald-50 border-emerald-200 text-emerald-800"
+            });
+
+            loadTodayAppointments();
+            loadDailyStats();
+        } catch (error) {
+            console.error('Error marking as purchased:', error);
+            toast({
+                title: "Erro ao registrar venda",
+                description: "Tente novamente.",
+                variant: "destructive"
+            });
+        }
+    };
+
     useEffect(() => {
         const fetchRemoteSettings = async () => {
             const goal = await settingsService.getSetting('mini_painel_daily_goal', import.meta.env.VITE_DAILY_VISIT_GOAL || "20");
@@ -473,8 +558,12 @@ export function useStorePanelData() {
         sendFollowUp,
         rescheduleAppointment,
         markFollowUpAsReturned,
+        updateContact,
+        markAsPurchased,
         selectedDate,
         setSelectedDate,
         loadTodayAppointments
     };
 }
+
+export type StorePanelData = ReturnType<typeof useStorePanelData>;

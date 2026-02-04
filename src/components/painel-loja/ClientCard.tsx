@@ -1,10 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Clock, Phone, Smartphone, RotateCcw, CheckCircle2, ShoppingBag, Pencil, User, XCircle, Trash2, Instagram } from 'lucide-react';
+import { Clock, Phone, RotateCcw, CheckCircle2, ShoppingBag, Pencil, XCircle, Instagram } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { formatPhoneForWhatsApp, cn } from "@/lib/utils";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -127,7 +126,16 @@ export function ClientCard({ contact, onUpdate, onMarkAsVisited, onMarkAsNoShow,
 
         // Compare and prepare updates
         if (formData.name !== contact.display_name) updates.display_name = formData.name;
-        if (formData.phone !== contact.phone_e164) updates.phone_e164 = formData.phone;
+        // Comparação mais inteligente para Telefone (tratar '' como null/undefined)
+        const currentPhone = contact.phone_e164 || '';
+        const newPhone = formData.phone || '';
+
+        // Só atualiza se mudou de fato (ignorando null vs '')
+        if (newPhone !== currentPhone) {
+            // Se estiver vazio, manda null para o banco (para não violar unique de string vazia)
+            updates.phone_e164 = newPhone === '' ? null : newPhone;
+        }
+
         if (formData.attendant !== contact.Atendente) updates.Atendente = formData.attendant;
         if (formData.interest !== contact.interesse) updates.interesse = formData.interest;
         if (formData.exchange !== contact.aparelho_de_troca) updates.aparelho_de_troca = formData.exchange;
@@ -195,12 +203,7 @@ export function ClientCard({ contact, onUpdate, onMarkAsVisited, onMarkAsNoShow,
         window.open(`https://wa.me/${cleanPhone}`, '_blank');
     };
 
-    const inputBaseClass = cn(
-        "bg-transparent border transition-all duration-200 outline-none rounded px-1 -ml-1 w-full",
-        isEditing
-            ? "border-gray-300 hover:border-emerald-400 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-200 animate-[wiggle_1s_ease-in-out_infinite]"
-            : "border-transparent cursor-default"
-    );
+
 
 
 
@@ -245,7 +248,7 @@ export function ClientCard({ contact, onUpdate, onMarkAsVisited, onMarkAsNoShow,
                                 value={formData.status}
                                 onValueChange={(value) => handleChange({ target: { name: 'status', value } } as any)}
                             >
-                                <SelectTrigger className="h-6 w-auto min-w-[100px] text-xs font-bold uppercase bg-muted border-border animate-[wiggle_1s_ease-in-out_infinite] px-2">
+                                <SelectTrigger className="h-6 w-auto min-w-[100px] text-xs font-bold uppercase bg-muted border-border animate-[wiggle_1s_ease-in-out_infinite]" px-2>
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -424,7 +427,7 @@ export function ClientCard({ contact, onUpdate, onMarkAsVisited, onMarkAsNoShow,
                     onClick={handleToggleEdit}
                     className={cn(
                         "p-2 rounded-full transition-colors z-20",
-                        isEditing ? "bg-emerald-100 text-emerald-700 opacity-100" : "bg-muted text-muted-foreground hover:bg-muted/80 opacity-0 group-hover:opacity-100"
+                        isEditing ? "bg-emerald-100 text-emerald-700 opacity-100" : "bg-muted text-muted-foreground hover:bg-muted/80 opacity-60 hover:opacity-100"
                     )}
                     title={isEditing ? "Salvar alterações" : "Editar card"}
                 >
@@ -485,7 +488,7 @@ export function ClientCard({ contact, onUpdate, onMarkAsVisited, onMarkAsNoShow,
 
             {/* Save Button - Visible ONLY when editing */}
             {isEditing && (
-                <div className="flex justify-center pt-2">
+                <div className="flex justify-end pt-2 pr-2">
                     <button
                         onClick={handleToggleEdit}
                         className="bg-emerald-100 text-emerald-600 hover:bg-emerald-200 hover:scale-105 transition-all p-2 rounded-full shadow-sm border border-emerald-200"

@@ -1,10 +1,9 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useStorePanelData } from "@/hooks/useStorePanelData";
+import { StorePanelData } from "@/hooks/useStorePanelData";
 import { CheckCircle2, AlertCircle, TrendingUp, Target, UserCheck, ShoppingBag, Calendar, Trophy } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 
-export function DailySummary() {
-    const { dailyStats, loading } = useStorePanelData();
+export function DailySummary({ dailyStats, loading }: StorePanelData) {
 
     if (loading) {
         return (

@@ -6,9 +6,11 @@ import { QuickActions } from "@/components/painel-loja/QuickActions";
 import { PainelLojaAuthPage } from "@/components/auth/PainelLojaAuthPage";
 import { LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useStorePanelData } from "@/hooks/useStorePanelData";
 
 export function PainelLojaPage() {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const storeData = useStorePanelData(); // Shared State Instance
 
     useEffect(() => {
         const authStatus = localStorage.getItem('painelLojaAuth');
@@ -61,13 +63,13 @@ export function PainelLojaPage() {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     {/* Left Wrapper - 2/3 width */}
                     <div className="lg:col-span-2 space-y-6">
-                        <TodayAppointments />
-                        <PendingNoShows />
+                        <TodayAppointments {...storeData} />
+                        <PendingNoShows {...storeData} />
                     </div>
 
                     {/* Right Wrapper - 1/3 width */}
                     <div className="space-y-6">
-                        <DailySummary />
+                        <DailySummary {...storeData} />
                         <QuickActions />
                     </div>
                 </div>
