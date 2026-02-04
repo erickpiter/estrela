@@ -479,7 +479,8 @@ export function useStorePanelData() {
         try {
             const { error } = await supabase
                 .from('contacts')
-                .update(updates)
+                // @ts-ignore
+                .update(updates as any)
                 .eq('id', contactId);
 
             if (error) throw error;
