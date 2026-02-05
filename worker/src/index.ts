@@ -3,13 +3,20 @@ import { format } from 'date-fns';
 import { reportService } from './reportService';
 import express from 'express';
 import path from 'path';
+import fs from 'fs';
 
 const app = express();
 const port = process.env.PORT || 80;
 
 // Serve static files from the React app build directory
 // In Docker, we will copy the React build to '../client' or similar
-const clientBuildPath = path.join(__dirname, '../../dist');
+// Local structure: __dirname is worker/dist, so client is ../../dist
+// Docker structure: __dirname is /app/worker-dist, so client is ../dist
+let clientBuildPath = path.join(__dirname, '../../dist');
+if (!fs.existsSync(clientBuildPath)) {
+    clientBuildPath = path.join(__dirname, '../dist');
+}
+
 app.use(express.static(clientBuildPath));
 
 // Handle React routing, return all requests to React app
