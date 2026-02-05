@@ -1,7 +1,7 @@
 import { supabase } from "@/lib/supabase";
 import { Database } from "@/types";
 
-type SettingsKey = 'mini_painel_daily_goal' | 'mini_painel_webhook_url' | 'report_auto_daily' | 'report_auto_weekly' | 'last_run_daily' | 'last_run_weekly';
+type SettingsKey = 'mini_painel_daily_goal' | 'mini_painel_webhook_url' | 'report_auto_daily' | 'report_auto_weekly' | 'last_run_daily' | 'last_run_weekly' | 'automation_logs';
 
 export const settingsService = {
     /**
