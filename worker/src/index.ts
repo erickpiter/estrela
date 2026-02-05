@@ -21,7 +21,28 @@ app.use(express.static(clientBuildPath));
 
 // Handle React routing, return all requests to React app
 app.get(/(.*)/, (req, res) => {
-    res.sendFile(path.join(clientBuildPath, 'index.html'));
+    // Read index.html
+    const indexPath = path.join(clientBuildPath, 'index.html');
+    fs.readFile(indexPath, 'utf8', (err, htmlData) => {
+        if (err) {
+            console.error('Error reading index.html', err);
+            return res.status(500).send('Error loading application');
+        }
+
+        // Inject runtime environment variables
+        // This solves the issue where Vite build args are missing in EasyPanel
+        const envScript = `
+        <script>
+            window.ENV = {
+                VITE_SUPABASE_URL: "${process.env.VITE_SUPABASE_URL || ''}",
+                VITE_SUPABASE_ANON_KEY: "${process.env.VITE_SUPABASE_ANON_KEY || ''}"
+            };
+        </script>
+        `;
+
+        const injectedHtml = htmlData.replace('<script id="env-config"></script>', envScript);
+        res.send(injectedHtml);
+    });
 });
 
 // Start the server
