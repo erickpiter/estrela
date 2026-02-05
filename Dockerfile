@@ -1,28 +1,28 @@
 # Stage 1: Build Frontend (React)
-FROM node:18-alpine AS frontend-builder
+FROM node:20-alpine AS frontend-builder
 WORKDIR /app
 COPY package*.json ./
-RUN npm install
+RUN npm install --legacy-peer-deps
 COPY . .
 RUN npm run build
 
 # Stage 2: Build Backend/Worker (Node)
-FROM node:18-alpine AS backend-builder
+FROM node:20-alpine AS backend-builder
 WORKDIR /app
 COPY worker/package*.json ./
-RUN npm install
+RUN npm install --legacy-peer-deps
 COPY worker/tsconfig.json ./
 # Make sure tsconfig is copied if exists, otherwise handled by simple compilation or if source is just .ts
 COPY worker/ .
 RUN npm run build
 
 # Stage 3: Final Production Image
-FROM node:18-alpine
+FROM node:20-alpine
 WORKDIR /app
 
 # Install production dependencies for the server
 COPY worker/package*.json ./
-RUN npm install --production
+RUN npm install --production --legacy-peer-deps
 
 # Copy built frontend static files
 COPY --from=frontend-builder /app/dist ./dist
