@@ -13,7 +13,7 @@ const clientBuildPath = path.join(__dirname, '../../dist');
 app.use(express.static(clientBuildPath));
 
 // Handle React routing, return all requests to React app
-app.get('*', (req, res) => {
+app.get(/(.*)/, (req, res) => {
     res.sendFile(path.join(clientBuildPath, 'index.html'));
 });
 
