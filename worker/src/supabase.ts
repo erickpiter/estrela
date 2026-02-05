@@ -9,7 +9,8 @@ dotenv.config({ path: path.resolve(__dirname, '../../.env') }); // Dev
 dotenv.config({ path: path.resolve(__dirname, '../.env') });    // Prod/Docker root
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
-const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
+// Prioritize Service Role Key for backend operations (bypasses RLS)
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
 
 if (!supabaseUrl || !supabaseKey) {
     console.error("Missing Supabase credentials. Check .env file.");

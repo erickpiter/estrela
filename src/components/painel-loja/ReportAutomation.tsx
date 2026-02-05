@@ -90,6 +90,7 @@ export function ReportAutomation() {
     }, []);
 
     const loadLogs = async () => {
+        setLoading(true); // Reusing existing loading state, or creating a new local one if simpler
         try {
             const logsStr = await settingsService.getSetting('automation_logs', '[]');
             let loadedLogs: LogEntry[] = [];
@@ -103,7 +104,14 @@ export function ReportAutomation() {
             return loadedLogs;
         } catch (e) {
             console.error("Error loading logs", e);
+            toast({
+                title: "Erro ao carregar histórico",
+                description: "Não foi possível buscar os logs.",
+                variant: "destructive"
+            });
             return [];
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -491,8 +499,8 @@ export function ReportAutomation() {
                                         </div>
                                     )}
                                 </ScrollArea>
-                                <Button variant="outline" size="sm" className="w-full mt-4" onClick={loadLogs}>
-                                    <Loader2 className="w-3 h-3 mr-2" />
+                                <Button variant="outline" size="sm" className="w-full mt-4" onClick={loadLogs} disabled={loading}>
+                                    {loading ? <Loader2 className="w-3 h-3 mr-2 animate-spin" /> : <Loader2 className="w-3 h-3 mr-2" />}
                                     Atualizar Lista
                                 </Button>
                             </TabsContent>
