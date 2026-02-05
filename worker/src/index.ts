@@ -1,6 +1,27 @@
 import cron from 'node-cron';
 import { format } from 'date-fns';
 import { reportService } from './reportService';
+import express from 'express';
+import path from 'path';
+
+const app = express();
+const port = process.env.PORT || 80;
+
+// Serve static files from the React app build directory
+// In Docker, we will copy the React build to '../client' or similar
+const clientBuildPath = path.join(__dirname, '../../dist');
+app.use(express.static(clientBuildPath));
+
+// Handle React routing, return all requests to React app
+app.get('*', (req, res) => {
+    res.sendFile(path.join(clientBuildPath, 'index.html'));
+});
+
+// Start the server
+app.listen(port, () => {
+    console.log(`Server running on port ${port}`);
+    console.log(`Serving static files from: ${clientBuildPath}`);
+});
 
 console.log('Starting Automation Worker...');
 
@@ -20,10 +41,6 @@ cron.schedule('* * * * *', async () => {
 
         if (dailyConfig.enabled && dailyConfig.time) {
             // Check if time matches OR if it passed but report wasn't sent (Catch-up logic)
-            // Ideally we stick to match for simple cron, but strict equality is what we had.
-            // Since this runs every minute on server, strict equality is safer than client-side.
-            // However, to be robust against downtime, let's implement "If time >= scheduled AND not run today".
-
             if (currentGenericTime >= dailyConfig.time) {
                 const lastRun = await reportService.getSetting('last_run_daily', '');
 
