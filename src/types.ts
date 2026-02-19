@@ -203,7 +203,6 @@ export interface Database {
                     salesperson_name: string | null
                     notes: string | null
                     completed_at: string | null
-                    completed_at: string | null
                     delivery_period: string | null
                     scheduled_date: string | null
                 }
@@ -225,7 +224,6 @@ export interface Database {
                     salesperson_name?: string | null
                     notes?: string | null
                     completed_at?: string | null
-                    completed_at?: string | null
                     delivery_period?: string | null
                     scheduled_date?: string | null
                 }
@@ -246,7 +244,6 @@ export interface Database {
                     delivery_reference_point?: string | null
                     salesperson_name?: string | null
                     notes?: string | null
-                    completed_at?: string | null
                     completed_at?: string | null
                     delivery_period?: string | null
                     scheduled_date?: string | null
