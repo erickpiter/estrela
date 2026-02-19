@@ -66,7 +66,7 @@ export function useDeliveries() {
                 }
             }
 
-            const { error } = await supabase
+            const { error } = await (supabase as any)
                 .from('sales_estrela')
                 .update(updates)
                 .eq('id', id);
@@ -89,7 +89,7 @@ export function useDeliveries() {
                     // 1. Try to find by Phone
                     if (delivery.customer_phone) {
                         const cleanPhone = delivery.customer_phone.replace(/\D/g, '').slice(-8); // Last 8 digits to be safe
-                        const { data: contacts } = await supabase
+                        const { data: contacts } = await (supabase as any)
                             .from('contacts')
                             .select('id, tags')
                             .ilike('phone_e164', `%${cleanPhone}%`)
@@ -103,7 +103,7 @@ export function useDeliveries() {
                     // 2. If not found by phone, try by Instagram
                     if (!contactToTag && delivery.customer_instagram) {
                         const cleanIg = delivery.customer_instagram.replace('@', '').trim();
-                        const { data: contacts } = await supabase
+                        const { data: contacts } = await (supabase as any)
                             .from('contacts')
                             .select('id, tags')
                             .ilike('IG', `%${cleanIg}%`) // Case insensitive match
@@ -118,7 +118,7 @@ export function useDeliveries() {
                     if (contactToTag) {
                         if (!contactToTag.tags?.includes('venda_realizada')) {
                             const newTags = contactToTag.tags ? `${contactToTag.tags},venda_realizada` : 'venda_realizada';
-                            await supabase.from('contacts').update({ tags: newTags }).eq('id', contactToTag.id);
+                            await (supabase as any).from('contacts').update({ tags: newTags }).eq('id', contactToTag.id);
 
                             toast({
                                 title: "Venda contabilizada!",
@@ -152,7 +152,7 @@ export function useDeliveries() {
     // Generic Update
     const updateDelivery = async (id: number, updates: Partial<Delivery>) => {
         try {
-            const { error } = await supabase
+            const { error } = await (supabase as any)
                 .from('sales_estrela')
                 .update(updates)
                 .eq('id', id);

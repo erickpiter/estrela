@@ -83,7 +83,7 @@ export function NewDeliveryForm({ onSuccess }: NewDeliveryFormProps) {
                 localStorage.setItem('last_salesperson', formData.salesperson_name);
             }
 
-            const { error } = await supabase
+            const { error } = await (supabase as any)
                 .from('sales_estrela')
                 .insert({
                     customer_name: formData.customer_name,
