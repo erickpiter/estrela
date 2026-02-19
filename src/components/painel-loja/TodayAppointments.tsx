@@ -46,17 +46,17 @@ export function TodayAppointments({ todayAppointments, loading, markAsVisited, m
     return (
         <Card className="h-fit border-border/50 bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60">
             <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                    <CardTitle className="flex items-center gap-2 text-lg font-medium">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 sm:gap-0">
+                    <CardTitle className="flex items-center gap-2 text-lg font-medium w-full sm:w-auto justify-center sm:justify-start">
                         <Calendar className="w-5 h-5 text-foreground" />
                         Agendados de Hoje
                     </CardTitle>
 
-                    <div className="flex items-center border rounded-md shadow-sm bg-background">
+                    <div className="flex items-center border rounded-md shadow-sm bg-background w-full sm:w-auto justify-between sm:justify-start">
                         <Button
                             variant="ghost"
                             size="icon"
-                            className="h-9 w-9 rounded-none hover:bg-muted border-r"
+                            className="h-9 w-9 rounded-none hover:bg-muted border-r shrink-0"
                             onClick={handlePrevDay}
                             disabled={!selectedDate}
                             title="Dia anterior"
@@ -69,7 +69,7 @@ export function TodayAppointments({ todayAppointments, loading, markAsVisited, m
                                 <Button
                                     variant={"ghost"}
                                     className={cn(
-                                        "h-9 min-w-[200px] justify-center text-center font-normal rounded-none hover:bg-muted px-4",
+                                        "h-9 flex-1 sm:flex-none sm:min-w-[200px] justify-center text-center font-normal rounded-none hover:bg-muted px-4",
                                         !selectedDate && "text-muted-foreground"
                                     )}
                                 >
@@ -93,7 +93,7 @@ export function TodayAppointments({ todayAppointments, loading, markAsVisited, m
                         <Button
                             variant="ghost"
                             size="icon"
-                            className="h-9 w-9 rounded-none hover:bg-muted border-l"
+                            className="h-9 w-9 rounded-none hover:bg-muted border-l shrink-0"
                             onClick={handleNextDay}
                             disabled={!selectedDate}
                             title="Próximo dia"

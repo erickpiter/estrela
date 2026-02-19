@@ -88,6 +88,22 @@ export function GoalBoard({ dailyGoal = 20 }: GoalBoardProps) {
 
             if (error) throw error;
 
+            // Fetch deliveries for the period
+            // Use local date strings to match 'scheduled_date' column format (YYYY-MM-DD)
+            const formattedStartDate = startDate.toLocaleDateString('en-CA');
+            const formattedEndDate = endDate.toLocaleDateString('en-CA');
+
+            const { data: deliveriesData, error: deliveriesError } = await supabase
+                .from('sales_estrela')
+                .select('*')
+                .eq('delivery_status', 'delivered')
+                .gte('scheduled_date', formattedStartDate)
+                .lte('scheduled_date', formattedEndDate);
+
+            if (deliveriesError) throw deliveriesError;
+
+            const deliveries = deliveriesData as any[];
+
             // Explicitly cast data to expected type to fix 'never' inference
             const contacts = data as any[];
 
@@ -96,6 +112,7 @@ export function GoalBoard({ dailyGoal = 20 }: GoalBoardProps) {
             let totalSched = 0;
             let totalConf = 0;
 
+            // Process Contacts (Appointments)
             contacts?.forEach(contact => {
                 const attendant = contact.Atendente || contact.source || contact.IG || 'Sem Atendente';
                 uniqueAttendantsSet.add(attendant); // Add to set
@@ -123,6 +140,36 @@ export function GoalBoard({ dailyGoal = 20 }: GoalBoardProps) {
                 if (contact.tags?.includes('venda_realizada')) {
                     attendantPerf[attendant].sales++;
                 }
+            });
+
+            // Process Deliveries
+            deliveries.forEach(delivery => {
+                const attendant = delivery.salesperson_name || 'Sem Atendente';
+                uniqueAttendantsSet.add(attendant);
+
+                if (!attendantPerf[attendant]) {
+                    attendantPerf[attendant] = { scheduled: 0, confirmed: 0, sales: 0, rate: 0 };
+                }
+
+                // Count as sale
+                attendantPerf[attendant].sales++;
+            });
+
+            // Process Deliveries
+            deliveries?.forEach(delivery => {
+                const attendant = delivery.salesperson_name || 'Sem Atendente';
+                uniqueAttendantsSet.add(attendant);
+
+                if (!attendantPerf[attendant]) {
+                    attendantPerf[attendant] = { scheduled: 0, confirmed: 0, sales: 0, rate: 0 };
+                }
+
+                // Deliveries count as sales. 
+                // Do they count as confirmed visits? 
+                // If we want them to help conversion rate, they should probably count as both 'confirmed' and 'scheduled' implicitly, 
+                // or just be standalone sales. 
+                // Current logic: just add to sales to avoid messing up appointment stats.
+                attendantPerf[attendant].sales++;
             });
 
             // Calculate Total Sales

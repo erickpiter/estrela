@@ -3,14 +3,18 @@ import { TodayAppointments } from "@/components/painel-loja/TodayAppointments";
 import { PendingNoShows } from "@/components/painel-loja/PendingNoShows";
 import { DailySummary } from "@/components/painel-loja/DailySummary";
 import { QuickActions } from "@/components/painel-loja/QuickActions";
+import { DeliveriesBoard } from "@/components/painel-loja/Deliveries/DeliveriesBoard";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PainelLojaAuthPage } from "@/components/auth/PainelLojaAuthPage";
 import { LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useStorePanelData } from "@/hooks/useStorePanelData";
+import { useDeliveries } from "@/hooks/useDeliveries";
 
 export function PainelLojaPage() {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const storeData = useStorePanelData(); // Shared State Instance
+    const { deliveries } = useDeliveries(); // Fetch deliveries for badge count
 
     useEffect(() => {
         const authStatus = localStorage.getItem('painelLojaAuth');
@@ -21,6 +25,8 @@ export function PainelLojaPage() {
         localStorage.removeItem('painelLojaAuth');
         setIsAuthenticated(false);
     };
+
+    const pendingDeliveriesCount = deliveries.filter(d => d.delivery_status === 'pending').length;
 
     if (!isAuthenticated) {
         return <PainelLojaAuthPage onAuthenticated={() => setIsAuthenticated(true)} />;
@@ -59,20 +65,42 @@ export function PainelLojaPage() {
             {/* Main Content */}
             <main className="container mx-auto px-6 py-8">
 
-                {/* Main grid layout - 3 columns on desktop, stacked on mobile */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    {/* Left Wrapper - 2/3 width */}
-                    <div className="lg:col-span-2 space-y-6">
-                        <TodayAppointments {...storeData} />
-                        <PendingNoShows {...storeData} />
+                <Tabs defaultValue="overview" className="space-y-6">
+                    <div className="flex items-center justify-between">
+                        <TabsList className="grid w-[400px] grid-cols-2">
+                            <TabsTrigger value="overview">Visão Geral</TabsTrigger>
+                            <TabsTrigger value="deliveries" className="flex items-center gap-2">
+                                Entregas
+                                {pendingDeliveriesCount > 0 && (
+                                    <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full flex items-center justify-center min-w-[1.25rem]">
+                                        {pendingDeliveriesCount}
+                                    </span>
+                                )}
+                            </TabsTrigger>
+                        </TabsList>
                     </div>
 
-                    {/* Right Wrapper - 1/3 width */}
-                    <div className="space-y-6">
-                        <DailySummary {...storeData} />
-                        <QuickActions />
-                    </div>
-                </div>
+                    <TabsContent value="overview" className="mt-0 space-y-6">
+                        {/* Main grid layout - 3 columns on desktop, stacked on mobile */}
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                            {/* Left Wrapper - 2/3 width */}
+                            <div className="lg:col-span-2 space-y-6">
+                                <TodayAppointments {...storeData} />
+                                <PendingNoShows {...storeData} />
+                            </div>
+
+                            {/* Right Wrapper - 1/3 width */}
+                            <div className="space-y-6">
+                                <DailySummary {...storeData} />
+                                <QuickActions />
+                            </div>
+                        </div>
+                    </TabsContent>
+
+                    <TabsContent value="deliveries" className="mt-0">
+                        <DeliveriesBoard />
+                    </TabsContent>
+                </Tabs>
             </main>
         </div>
     );

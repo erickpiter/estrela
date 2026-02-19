@@ -127,14 +127,31 @@ export function useStorePanelData() {
                 c.tags?.includes('compareceu')
             ).length || 0;
 
-            // Calculate Total Sales using tags
-            const totalSales = appointmentsArray.filter(c =>
+            // Load deliveries stats
+            // Querying 'scheduled_date' (DATE column) with simple equality to YYYY-MM-DD string
+            const { data: deliveriesData, error: deliveriesError } = await supabase
+                .from('sales_estrela')
+                .select('*')
+                .eq('delivery_status', 'delivered')
+                .eq('scheduled_date', formattedDate);
+
+            if (deliveriesError) throw deliveriesError;
+
+            const deliveriesArray = (deliveriesData || []) as any[];
+            console.log('DEBUG: Daily Stats Deliveries', { date: formattedDate, count: deliveriesArray.length, data: deliveriesArray });
+
+            // Calculate Total Sales using tags (Appointments) + Deliveries
+            const appointmentSales = appointmentsArray.filter(c =>
                 c.tags?.includes('venda_realizada')
             ).length || 0;
+
+            const deliverySales = deliveriesArray.length;
+            const totalSales = appointmentSales + deliverySales;
 
             // Calculate Attendant Performance
             const attendantPerformance: { [key: string]: { visits: number; sales: number } } = {};
 
+            // Process Appointments
             appointmentsArray.forEach(c => {
                 const attendantName = c.Atendente || c.source || c.IG || 'Sem Atendente';
                 if (!attendantPerformance[attendantName]) {
@@ -149,6 +166,18 @@ export function useStorePanelData() {
                 if (c.tags?.includes('venda_realizada')) {
                     attendantPerformance[attendantName].sales++;
                 }
+            });
+
+            // Process Deliveries
+            deliveriesArray.forEach(d => {
+                const attendantName = d.salesperson_name || 'Sem Atendente';
+                if (!attendantPerformance[attendantName]) {
+                    attendantPerformance[attendantName] = { visits: 0, sales: 0 };
+                }
+                // Deliveries count as sales
+                attendantPerformance[attendantName].sales++;
+                // Optionally count as 'visit' (confirmed interaction)? 
+                // For now, keeping it strictly as sales to avoid skewing "appointment" metrics unless requested.
             });
 
             // Load follow-ups stats
@@ -412,8 +441,16 @@ export function useStorePanelData() {
             })
             .subscribe();
 
+        const deliveriesSubscription = supabase
+            .channel('sales_estrela_dashboard_changes')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'sales_estrela' }, () => {
+                loadDailyStats(); // Refresh stats when deliveries change
+            })
+            .subscribe();
+
         return () => {
             supabase.removeChannel(contactsSubscription);
+            supabase.removeChannel(deliveriesSubscription);
         };
     }, [selectedDate]); // Add selectedDate dependency
 

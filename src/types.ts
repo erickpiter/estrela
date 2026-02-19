@@ -183,6 +183,74 @@ export interface Database {
                     value?: Json
                     updated_at?: string
                 }
+            },
+            sales_estrela: {
+                Row: {
+                    id: number
+                    created_at: string
+                    product_category: string | null
+                    product_name: string | null
+                    total_value: number | null
+                    payment_method: string | null
+                    payment_details: string | null
+                    customer_name: string | null
+                    customer_phone: string | null
+                    customer_instagram: string | null
+                    is_delivery: boolean
+                    delivery_status: 'pending' | 'ready' | 'shipping' | 'delivered' | 'cancelled' | null
+                    delivery_address: string | null
+                    delivery_reference_point: string | null
+                    salesperson_name: string | null
+                    notes: string | null
+                    completed_at: string | null
+                    completed_at: string | null
+                    delivery_period: string | null
+                    scheduled_date: string | null
+                }
+                Insert: {
+                    id?: number
+                    created_at?: string
+                    product_category?: string | null
+                    product_name?: string | null
+                    total_value?: number | null
+                    payment_method?: string | null
+                    payment_details?: string | null
+                    customer_name?: string | null
+                    customer_phone?: string | null
+                    customer_instagram?: string | null
+                    is_delivery?: boolean
+                    delivery_status?: 'pending' | 'ready' | 'shipping' | 'delivered' | 'cancelled' | null
+                    delivery_address?: string | null
+                    delivery_reference_point?: string | null
+                    salesperson_name?: string | null
+                    notes?: string | null
+                    completed_at?: string | null
+                    completed_at?: string | null
+                    delivery_period?: string | null
+                    scheduled_date?: string | null
+                }
+                Update: {
+                    id?: number
+                    created_at?: string
+                    product_category?: string | null
+                    product_name?: string | null
+                    total_value?: number | null
+                    payment_method?: string | null
+                    payment_details?: string | null
+                    customer_name?: string | null
+                    customer_phone?: string | null
+                    customer_instagram?: string | null
+                    is_delivery?: boolean
+                    delivery_status?: 'pending' | 'ready' | 'shipping' | 'delivered' | 'cancelled' | null
+                    delivery_address?: string | null
+                    delivery_reference_point?: string | null
+                    salesperson_name?: string | null
+                    notes?: string | null
+                    completed_at?: string | null
+                    completed_at?: string | null
+                    delivery_period?: string | null
+                    scheduled_date?: string | null
+                }
             }
         }
     }
