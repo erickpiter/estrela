@@ -215,8 +215,8 @@ export function useStorePanelData() {
                 .update({
                     tags: 'compareceu', // Keep for backward compatibility
                     status_visita: 'confirmado',
-                    checkin_at: new Date().toISOString(),
-                    ultimo_contato: new Date().toISOString()
+                    checkin_at: new Date(Date.UTC(new Date().getFullYear(), new Date().getMonth(), new Date().getDate(), new Date().getHours(), new Date().getMinutes())).toISOString(),
+                    ultimo_contato: new Date().toISOString() // This one is fine as true timestamp since it's for sorting/tracking actual event time
                 } as any)
                 .eq('id', contactId);
 
@@ -230,7 +230,7 @@ export function useStorePanelData() {
                 attendant: contact?.Atendente,
                 phone: contact?.phone_e164,
                 ig: contact?.IG,
-                checkInTime: new Date().toISOString()
+                checkInTime: new Date(Date.UTC(new Date().getFullYear(), new Date().getMonth(), new Date().getDate(), new Date().getHours(), new Date().getMinutes())).toISOString()
             });
 
             toast({
@@ -365,7 +365,17 @@ export function useStorePanelData() {
             if (!contact) return;
 
             const now = new Date(); // Local/Client time object
-            const nowISO = now.toISOString();
+
+            // FIXED: Face Value UTC strategy
+            // If it's 14:30 Here, we want 14:30 UTC in DB.
+            const nowISO = new Date(Date.UTC(
+                now.getFullYear(),
+                now.getMonth(),
+                now.getDate(),
+                now.getHours(),
+                now.getMinutes(),
+                now.getSeconds()
+            )).toISOString();
 
             const { error } = await supabase
                 .from('contacts')

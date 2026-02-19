@@ -86,7 +86,7 @@ export function ClientCard({ contact, onUpdate, onMarkAsVisited, onMarkAsNoShow,
     const [formData, setFormData] = useState({
         name: contact.display_name || '',
         tag: contact.tags || '',
-        time: contact.data_agendamento ? new Date(contact.data_agendamento).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '',
+        time: contact.data_agendamento ? new Date(contact.data_agendamento).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' }) : '',
         phone: contact.phone_e164 || '',
         attendant: contact.Atendente || '',
         interest: contact.interesse || '',
@@ -146,10 +146,19 @@ export function ClientCard({ contact, onUpdate, onMarkAsVisited, onMarkAsNoShow,
             const originalDate = contact.data_agendamento ? new Date(contact.data_agendamento) : new Date();
             const [hours, minutes] = formData.time.split(':').map(Number);
             if (!isNaN(hours) && !isNaN(minutes)) {
-                originalDate.setHours(hours, minutes);
-                const newIso = originalDate.toISOString();
+
+                // FIXED: Create Date locally but interpret as UTC to avoid timezone shifts
+                // "Face Value" strategy: User sees 15:00, we save 15:00 UTC.
+                const year = originalDate.getUTCFullYear();
+                const month = originalDate.getUTCMonth();
+                const day = originalDate.getUTCDate();
+
+                // Construct a UTC date with the specific time components
+                const newDate = new Date(Date.UTC(year, month, day, hours, minutes, 0));
+                const newIso = newDate.toISOString();
+
                 // Simple check if time effectively changed
-                if (contact.data_agendamento && Math.abs(new Date(contact.data_agendamento).getTime() - originalDate.getTime()) > 60000) {
+                if (contact.data_agendamento && Math.abs(new Date(contact.data_agendamento).getTime() - newDate.getTime()) > 60000) {
                     updates.data_agendamento = newIso;
                 } else if (!contact.data_agendamento) {
                     updates.data_agendamento = newIso;
