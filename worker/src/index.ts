@@ -70,22 +70,31 @@ cron.schedule('* * * * *', async () => {
         if (dailyConfig.enabled && dailyConfig.time) {
             // Check if time matches OR if it passed but report wasn't sent (Catch-up logic)
             if (currentGenericTime >= dailyConfig.time) {
-                const lastRun = await reportService.getSetting('last_run_daily', '');
+                // Pass true to throw error if connection fails, preventing false positive "needs to run"
+                const lastRun = await reportService.getSetting('last_run_daily', '', true);
 
                 if (lastRun !== todayStr) {
                     console.log("Triggering Daily Report...");
-                    const yesterday = new Date();
-                    yesterday.setDate(yesterday.getDate() - 1);
 
-                    const stats = await reportService.fetchStatsForRange(yesterday, yesterday);
-                    await reportService.sendToWebhook({
-                        type: 'daily_report',
-                        reportDate: format(yesterday, 'yyyy-MM-dd'),
-                        triggerTime: now.toISOString(),
-                        stats
-                    });
+                    // CRITICAL FIX: Mark as run IMMEDIATELY to prevent race conditions or re-runs on slow sends
                     await reportService.saveSetting('last_run_daily', todayStr);
-                    console.log("Daily Report Sent!");
+
+                    try {
+                        const yesterday = new Date();
+                        yesterday.setDate(yesterday.getDate() - 1);
+
+                        const stats = await reportService.fetchStatsForRange(yesterday, yesterday);
+                        await reportService.sendToWebhook({
+                            type: 'daily_report',
+                            reportDate: format(yesterday, 'yyyy-MM-dd'),
+                            triggerTime: now.toISOString(),
+                            stats
+                        });
+                        console.log("Daily Report Sent!");
+                    } catch (error) {
+                        console.error("Failed to send daily report:", error);
+                        // Optional: fallback logic if needed, but for now we prevent spam by keeping the flag set
+                    }
                 }
             }
         }
@@ -96,23 +105,32 @@ cron.schedule('* * * * *', async () => {
 
         if (weeklyConfig.enabled && weeklyConfig.day === currentDay && weeklyConfig.time) {
             if (currentGenericTime >= weeklyConfig.time) {
-                const lastRun = await reportService.getSetting('last_run_weekly', '');
+                // Pass true to throw error if connection fails
+                const lastRun = await reportService.getSetting('last_run_weekly', '', true);
+
                 if (lastRun !== todayStr) {
                     console.log("Triggering Weekly Report...");
-                    const endWeek = new Date();
-                    endWeek.setDate(endWeek.getDate() - 1);
-                    const startWeek = new Date();
-                    startWeek.setDate(startWeek.getDate() - 7);
 
-                    const stats = await reportService.fetchStatsForRange(startWeek, endWeek);
-                    await reportService.sendToWebhook({
-                        type: 'weekly_report',
-                        reportDate: `${format(startWeek, 'yyyy-MM-dd')} to ${format(endWeek, 'yyyy-MM-dd')}`,
-                        triggerTime: now.toISOString(),
-                        stats
-                    });
+                    // CRITICAL FIX: Mark as run IMMEDIATELY
                     await reportService.saveSetting('last_run_weekly', todayStr);
-                    console.log("Weekly Report Sent!");
+
+                    try {
+                        const endWeek = new Date();
+                        endWeek.setDate(endWeek.getDate() - 1);
+                        const startWeek = new Date();
+                        startWeek.setDate(startWeek.getDate() - 7);
+
+                        const stats = await reportService.fetchStatsForRange(startWeek, endWeek);
+                        await reportService.sendToWebhook({
+                            type: 'weekly_report',
+                            reportDate: `${format(startWeek, 'yyyy-MM-dd')} to ${format(endWeek, 'yyyy-MM-dd')}`,
+                            triggerTime: now.toISOString(),
+                            stats
+                        });
+                        console.log("Weekly Report Sent!");
+                    } catch (error) {
+                        console.error("Failed to send weekly report:", error);
+                    }
                 }
             }
         }

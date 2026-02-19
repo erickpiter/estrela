@@ -25,7 +25,7 @@ interface LogEntry {
 }
 
 export const reportService = {
-    async getSetting(key: string, defaultValue: string): Promise<string> {
+    async getSetting(key: string, defaultValue: string, throwOnError = false): Promise<string> {
         try {
             const { data, error } = await supabase
                 .from('settings')
@@ -33,11 +33,14 @@ export const reportService = {
                 .eq('key', key)
                 .single();
 
+            if (error) throw error;
+
             if (data && (data as any).value) {
                 return String((data as any).value);
             }
         } catch (error) {
             console.error(`Error fetching setting ${key}:`, error);
+            if (throwOnError) throw error;
         }
         return defaultValue;
     },
